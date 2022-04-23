@@ -25,6 +25,7 @@ type ClientConfig struct {
 	ProxyPSK      []byte `json:"proxyPSK"`
 	ProxyFwmark   int    `json:"proxyFwmark"`
 	MTU           int    `json:"mtu"`
+	GSO           bool   `json:"gso"`
 }
 
 // clientQueuedPacket stores an unencrypted wg packet.
@@ -54,6 +55,8 @@ type client struct {
 
 	mu    sync.RWMutex
 	table map[netip.AddrPort]*clientNatEntry
+
+	relayWgToProxy func(clientAddr netip.AddrPort, natEntry *clientNatEntry)
 }
 
 // NewClientService creates a swgp client service from the specified client config.
@@ -138,6 +141,13 @@ func (c *client) Start() (err error) {
 			zap.Int("wgFwmark", c.config.WgFwmark),
 			zap.NamedError("serr", serr),
 		)
+	}
+
+	// Detect UDP GSO support.
+	if c.config.GSO && conn.DetectUDPGSO(c.wgConn, c.logger) {
+		c.relayWgToProxy = c.relayWgToProxyGSO
+	} else {
+		c.relayWgToProxy = c.relayWgToProxyDefault
 	}
 
 	// Main loop.
@@ -303,7 +313,7 @@ func (c *client) Start() (err error) {
 	return
 }
 
-func (c *client) relayWgToProxy(clientAddr netip.AddrPort, natEntry *clientNatEntry) {
+func (c *client) relayWgToProxyDefault(clientAddr netip.AddrPort, natEntry *clientNatEntry) {
 	for {
 		queuedPacket, ok := <-natEntry.proxyConnSendCh
 		if !ok {
