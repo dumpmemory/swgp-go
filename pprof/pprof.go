@@ -3,12 +3,18 @@ package pprof
 import (
 	"context"
 	"log/slog"
-	"net"
-	"net/http"
-	_ "net/http/pprof"
 
 	"github.com/database64128/swgp-go/tslog"
 )
+
+// PprofDisabledError is returned when the pprof service is disabled at build time.
+type PprofDisabledError struct{}
+
+func (PprofDisabledError) Error() string {
+	return "pprof service is disabled at build time"
+}
+
+var ErrPprofDisabled = PprofDisabledError{}
 
 // Config is the configuration for the pprof service.
 type Config struct {
@@ -23,42 +29,13 @@ type Config struct {
 }
 
 // NewService creates a new pprof service.
-func (c Config) NewService(logger *tslog.Logger) *Service {
-	network := c.ListenNetwork
-	if network == "" {
-		network = "tcp"
-	}
-
-	return &Service{
-		logger:  logger,
-		network: network,
-		server: http.Server{
-			Addr:     c.ListenAddress,
-			Handler:  logPprofRequests(logger, http.DefaultServeMux),
-			ErrorLog: slog.NewLogLogger(logger.Handler(), slog.LevelError),
-		},
-	}
-}
-
-// logPprofRequests is a middleware that logs pprof requests.
-func logPprofRequests(logger *tslog.Logger, h http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		h.ServeHTTP(w, r)
-		logger.Info("Handled pprof request",
-			slog.String("proto", r.Proto),
-			slog.String("method", r.Method),
-			slog.String("requestURI", r.RequestURI),
-			slog.String("host", r.Host),
-			slog.String("remoteAddr", r.RemoteAddr),
-		)
-	})
+func (c *Config) NewService(logger *tslog.Logger) (*Service, error) {
+	return c.newService(logger)
 }
 
 // Service implements [service.Service].
 type Service struct {
-	logger  *tslog.Logger
-	network string
-	server  http.Server
+	service
 }
 
 // SlogAttr implements [service.Service.SlogAttr].
@@ -68,27 +45,10 @@ func (*Service) SlogAttr() slog.Attr {
 
 // Start implements [service.Service.Start].
 func (s *Service) Start(ctx context.Context) error {
-	var lc net.ListenConfig
-	ln, err := lc.Listen(ctx, s.network, s.server.Addr)
-	if err != nil {
-		return err
-	}
-
-	go func() {
-		if err := s.server.Serve(ln); err != nil && err != http.ErrServerClosed {
-			s.logger.Error("Failed to serve pprof", tslog.Err(err))
-		}
-	}()
-
-	s.logger.Info("Started pprof", slog.Any("listenAddress", ln.Addr()))
-	return nil
+	return s.start(ctx)
 }
 
 // Stop implements [service.Service.Stop].
 func (s *Service) Stop() error {
-	if err := s.server.Close(); err != nil {
-		return err
-	}
-	s.logger.Info("Stopped pprof")
-	return nil
+	return s.stop()
 }

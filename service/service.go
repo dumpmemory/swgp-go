@@ -190,7 +190,11 @@ func (sc *Config) Manager(logger *tslog.Logger) (*Manager, error) {
 	}
 
 	if sc.Pprof.Enabled {
-		services = append(services, sc.Pprof.NewService(logger))
+		pprofService, err := sc.Pprof.NewService(logger)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create pprof service: %w", err)
+		}
+		services = append(services, pprofService)
 	}
 
 	if ifacePicker != nil {
