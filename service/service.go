@@ -6,8 +6,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"log/slog"
 	"net/netip"
+	"os"
 
 	"github.com/database64128/swgp-go/conn"
 	"github.com/database64128/swgp-go/internal/wireguard"
@@ -266,7 +268,24 @@ func (me *ManagerError) Unwrap() error {
 	return me.Err
 }
 
-func newPacketHandler(proxyMode string, proxyPSK []byte, maxPacketSize int) (h packet.Handler, overhead int, err error) {
+const pskSize = 32
+
+func newPacketHandler(proxyMode, proxyPSKFilePath string, proxyPSK []byte, maxPacketSize int) (h packet.Handler, overhead int, err error) {
+	if proxyPSKFilePath != "" {
+		if len(proxyPSK) != 0 {
+			return nil, 0, errors.New("only one of proxyPSKFilePath and proxyPSK can be specified")
+		}
+
+		proxyPSK, err = readPSKFile(proxyPSKFilePath)
+		if err != nil {
+			return nil, 0, err
+		}
+	} else {
+		if len(proxyPSK) != pskSize {
+			return nil, 0, fmt.Errorf("invalid PSK size: got %d bytes, want %d bytes", len(proxyPSK), pskSize)
+		}
+	}
+
 	switch proxyMode {
 	case "zero-overhead":
 		h, err = packet.NewZeroOverheadHandler(proxyPSK, maxPacketSize)
@@ -277,6 +296,29 @@ func newPacketHandler(proxyMode string, proxyPSK []byte, maxPacketSize int) (h p
 	default:
 		return nil, 0, fmt.Errorf("unknown proxy mode: %q", proxyMode)
 	}
+}
+
+func readPSKFile(path string) ([]byte, error) {
+	f, err := os.Open(path)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open PSK file: %w", err)
+	}
+	defer f.Close()
+
+	fi, err := f.Stat()
+	if err != nil {
+		return nil, fmt.Errorf("failed to stat PSK file: %w", err)
+	}
+	if size := fi.Size(); size != pskSize {
+		return nil, fmt.Errorf("invalid PSK file size: got %d bytes, want %d bytes", size, pskSize)
+	}
+
+	psk := make([]byte, pskSize)
+	if _, err := io.ReadFull(f, psk); err != nil {
+		return nil, fmt.Errorf("failed to read PSK file: %w", err)
+	}
+
+	return psk, nil
 }
 
 const (

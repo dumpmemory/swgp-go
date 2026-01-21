@@ -45,7 +45,16 @@ type ServerConfig struct {
 	ProxyMode string `json:"proxyMode"`
 
 	// ProxyPSK specifies the pre-shared key for the proxy.
-	ProxyPSK []byte `json:"proxyPSK"`
+	//
+	// Only one of ProxyPSK and ProxyPSKFilePath can be specified.
+	ProxyPSK []byte `json:"proxyPSK,omitzero"`
+
+	// ProxyPSKFilePath specifies the path to a file containing the pre-shared key for the proxy.
+	//
+	// The contents of the file must be exactly the unencoded raw bytes of the PSK.
+	//
+	// Only one of ProxyPSK and ProxyPSKFilePath can be specified.
+	ProxyPSKFilePath string `json:"proxyPSKFilePath,omitzero"`
 
 	// ProxyFwmark optionally specifies the server socket's fwmark on Linux, or user cookie on FreeBSD.
 	//
@@ -173,7 +182,7 @@ func (sc *ServerConfig) Server(logger *tslog.Logger, socketConfigCache conn.UDPS
 	maxProxyPacketSizev6 := maxProxyPacketSizev6FromPathMTU(sc.MTU)
 
 	// Create packet handler for user-specified proxy mode.
-	handler4, handlerOverhead, err := newPacketHandler(sc.ProxyMode, sc.ProxyPSK, maxProxyPacketSizev4)
+	handler4, handlerOverhead, err := newPacketHandler(sc.ProxyMode, sc.ProxyPSKFilePath, sc.ProxyPSK, maxProxyPacketSizev4)
 	if err != nil {
 		return nil, err
 	}

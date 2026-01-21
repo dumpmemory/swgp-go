@@ -68,7 +68,7 @@ go build -trimpath -ldflags '-s -w' ./cmd/swgp-go
 
 All configuration examples and systemd unit files can be found in the [docs](docs) directory.
 
-`swgp-go` uses the same PSK format as WireGuard. A PSK can be generated using `wg genpsk` or `openssl rand -base64 32`.
+`swgp-go` uses the same PSK format as WireGuard. A base64-encoded PSK can be generated using `wg genpsk` or `openssl rand -base64 32` for use with `"proxyPSK"`. Alternatively, specify a separate PSK file with `"proxyPSKFilePath"`, which can be generated using `openssl rand -out psk_file 32`.
 
 Make sure to use the right MTU for both server and client. To encourage correct use, `swgp-go` disables IP fragmentation and drops packets that are bigger than expected.
 
