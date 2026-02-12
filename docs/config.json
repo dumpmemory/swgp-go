@@ -38,6 +38,7 @@
             "proxyPSKFilePath": "",
             "proxyFwmark": 0,
             "proxyTrafficClass": 0,
+            "proxyAutoPickInterface": false,
             "mtu": 1500,
             "relayBatchSize": 0,
             "mainRecvBatchSize": 0,
