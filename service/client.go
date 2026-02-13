@@ -675,8 +675,9 @@ func (c *client) relayWgToProxyGeneric(
 		var proxyPktinfo conn.Pktinfo
 
 		if proxyPktinfop != nil {
-			proxyPktinfo = *proxyPktinfop.Load()
-			if !proxyPktinfo.Addr.IsValid() {
+			if pp := proxyPktinfop.Load(); pp != nil {
+				proxyPktinfo = *pp
+			} else {
 				logger.Debug("swgpPacket dropped: no suitable interface")
 				sendQueuedPackets = sendQueuedPackets[:0]
 			}

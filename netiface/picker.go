@@ -55,20 +55,18 @@ func (p *Picker) Stop() error {
 	return p.stop()
 }
 
-// Default4 returns the IPv4 address and the interface index of a physical
-// network interface with an IPv4 default route.
+// Default4 returns an atomic pointer to a struct containing the IPv4 address and
+// the interface index of a physical network interface with an IPv4 default route.
 //
-// The returned pointer is guaranteed to be non-nil, but the value may be zero,
-// indicating that no suitable interface was found.
+// If no suitable interface is found, the atomically loaded pointer will be nil.
 func (p *Picker) Default4() *atomic.Pointer[conn.Pktinfo] {
 	return p.default4()
 }
 
-// Default6 returns the IPv6 address and the interface index of a physical
-// network interface with an IPv6 default route.
+// Default6 returns an atomic pointer to a struct containing the IPv6 address and
+// the interface index of a physical network interface with an IPv6 default route.
 //
-// The returned pointer is guaranteed to be non-nil, but the value may be zero,
-// indicating that no suitable interface was found.
+// If no suitable interface is found, the atomically loaded pointer will be nil.
 func (p *Picker) Default6() *atomic.Pointer[conn.Pktinfo] {
 	return p.default6()
 }

@@ -19,15 +19,12 @@ import (
 )
 
 func (*PickerConfig) newPicker(logger *tslog.Logger) (*Picker, error) {
-	p := Picker{
+	return &Picker{
 		picker: picker{
 			logger:          logger,
 			ifaceInfoByLuid: make(map[uint64]*ifaceInfo),
 		},
-	}
-	p.pktinfo4p.Store(&p.pktinfo0)
-	p.pktinfo6p.Store(&p.pktinfo0)
-	return &p, nil
+	}, nil
 }
 
 type picker struct {
@@ -37,7 +34,6 @@ type picker struct {
 	activeIfaceLuid6                                  uint64
 	activeIfaceInfo4                                  *ifaceInfo
 	activeIfaceInfo6                                  *ifaceInfo
-	pktinfo0                                          conn.Pktinfo // zero value placeholder
 	pktinfo4p                                         atomic.Pointer[conn.Pktinfo]
 	pktinfo6p                                         atomic.Pointer[conn.Pktinfo]
 	notifyCh                                          chan<- mibNotification
@@ -327,7 +323,7 @@ func (p *picker) handleMibUnicastIpAddressRowNotification(nmsg mibNotification) 
 					tslog.Uint("oldIfindex", nmsg.InterfaceIndex),
 				)
 				p.activeIfaceInfo4.Addr4 = netip.Addr{}
-				p.pktinfo4p.Store(&p.pktinfo0)
+				p.pktinfo4p.Store(nil)
 			}
 
 		case p.activeIfaceLuid6:
@@ -337,7 +333,7 @@ func (p *picker) handleMibUnicastIpAddressRowNotification(nmsg mibNotification) 
 					tslog.Uint("oldIfindex", nmsg.InterfaceIndex),
 				)
 				p.activeIfaceInfo6.Addr6 = netip.Addr{}
-				p.pktinfo6p.Store(&p.pktinfo0)
+				p.pktinfo6p.Store(nil)
 			}
 
 		default:
@@ -468,7 +464,7 @@ func (p *picker) handleMibIpForwardRow2Notification(nmsg mibNotification) {
 						tslog.Addr("oldAddr", p.activeIfaceInfo4.Addr4),
 						tslog.Uint("oldIfindex", nmsg.InterfaceIndex),
 					)
-					p.pktinfo4p.Store(&p.pktinfo0)
+					p.pktinfo4p.Store(nil)
 				}
 
 				p.logger.Info("Removing default IPv4 interface",
@@ -486,7 +482,7 @@ func (p *picker) handleMibIpForwardRow2Notification(nmsg mibNotification) {
 						tslog.Addr("oldAddr", p.activeIfaceInfo6.Addr6),
 						tslog.Uint("oldIfindex", nmsg.InterfaceIndex),
 					)
-					p.pktinfo6p.Store(&p.pktinfo0)
+					p.pktinfo6p.Store(nil)
 				}
 
 				p.logger.Info("Removing default IPv6 interface",

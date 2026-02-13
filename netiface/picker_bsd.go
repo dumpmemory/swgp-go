@@ -20,19 +20,15 @@ import (
 )
 
 func (*PickerConfig) newPicker(logger *tslog.Logger) (*Picker, error) {
-	p := Picker{
+	return &Picker{
 		picker: picker{
 			logger: logger,
 		},
-	}
-	p.pktinfo4p.Store(&p.pktinfo0)
-	p.pktinfo6p.Store(&p.pktinfo0)
-	return &p, nil
+	}, nil
 }
 
 type picker struct {
 	logger    *tslog.Logger
-	pktinfo0  conn.Pktinfo // zero value placeholder
 	pktinfo4  conn.Pktinfo
 	pktinfo6  conn.Pktinfo
 	pktinfo4p atomic.Pointer[conn.Pktinfo]
@@ -283,7 +279,7 @@ func (p *picker) handleRouteMessage(
 						tslog.Uint("oldIfindex", p.pktinfo6.Ifindex),
 					)
 					p.pktinfo6 = conn.Pktinfo{}
-					p.pktinfo6p.Store(&p.pktinfo0)
+					p.pktinfo6p.Store(nil)
 				}
 
 			default:
@@ -395,7 +391,7 @@ func (p *picker) handleRouteMessage(
 						tslog.Uint("oldIfindex", p.pktinfo4.Ifindex),
 					)
 					p.pktinfo4 = conn.Pktinfo{}
-					p.pktinfo4p.Store(&p.pktinfo0)
+					p.pktinfo4p.Store(nil)
 				}
 
 			default:
