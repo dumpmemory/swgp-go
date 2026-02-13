@@ -70,7 +70,20 @@ All configuration examples and systemd unit files can be found in the [docs](doc
 
 `swgp-go` uses the same PSK format as WireGuard. A base64-encoded PSK can be generated using `wg genpsk` or `openssl rand -base64 32` for use with `"proxyPSK"`. Alternatively, specify a separate PSK file with `"proxyPSKFilePath"`, which can be generated using `openssl rand -out psk_file 32`.
 
-Make sure to use the right MTU for both server and client. To encourage correct use, `swgp-go` disables IP fragmentation and drops packets that are bigger than expected.
+Make sure to use the right MTU for both server and client. To encourage correct use, by default, `swgp-go` disables IP fragmentation and drops packets that are bigger than expected. If your network does not work well with this, set `"pathMTUDiscovery"` to one of the modes below.
+
+| Mode | Behavior | Linux | Windows | macOS | FreeBSD | Other OSes |
+| --- | --- | --- | --- | --- | --- | --- |
+| `"default"` | App default (equivalent to `"do"`). | - | - | - | - | - |
+| `"system"` | System default (usually allows fragmentation; WireGuard uses this). | - | - | - | - | - |
+| `"dont"` | Disable PMTUD and allow fragmentation. | ✅ | ✅ | ✅ | ✅ | ❌ |
+| `"do"` | Enable PMTUD and drop packets that exceed MTU. | ✅ | ✅ | ✅ | ✅ | ❌ |
+| `"probe"` | Like `"do"`, but permit packets above probed MTU. | ✅ | ✅ | ❌ | ❌ | ❌ |
+| `"want"` | Linux IP_PMTUDISC_WANT behavior. | ✅ | ❌ | ❌ | ❌ | ❌ |
+| `"interface"` | Use interface MTU; no local fragmentation. | ✅ | ❌ | ❌ | ❌ | ❌ |
+| `"omit"` | Like `"interface"`, but permits fragmentation if needed. | ✅ | ❌ | ❌ | ❌ | ❌ |
+
+*Legend: ✅ = supported, ❌ = ignored.*
 
 ### 1. Server
 

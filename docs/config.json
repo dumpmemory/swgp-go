@@ -20,7 +20,8 @@
             "sendChannelCapacity": 0,
             "disableMmsg": false,
             "disableUDPGSO": false,
-            "disableUDPGRO": false
+            "disableUDPGRO": false,
+            "pathMTUDiscovery": ""
         }
     ],
     "clients": [
@@ -45,7 +46,8 @@
             "sendChannelCapacity": 0,
             "disableMmsg": false,
             "disableUDPGSO": false,
-            "disableUDPGRO": false
+            "disableUDPGRO": false,
+            "pathMTUDiscovery": ""
         }
     ],
     "pprof": {
