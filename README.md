@@ -127,6 +127,17 @@ In this example, `swgp-go` runs a proxy client instance on port 20222. Encrypted
 }
 ```
 
+#### Routing loop prevention
+
+If you configure your WireGuard tunnel to be the default network interface for internet access, it is important that traffic from `swgp-go` is not routed back into the tunnel, which would cause a routing loop. Depending on your operating system and network configuration, there are a few options:
+
+1. `"proxyFwmark"`: Set to the same `fwmark` in your WireGuard configuration. Most reliable, but only available on Linux and FreeBSD.
+2. `"proxyAutoPickInterface": true`: Automagically selects a physical egress interface. Should just work on common macOS[^1] and Windows[^2] setups.
+3. `"proxyConnListenAddress"`: Works everywhere, but requires hardcoding the egress address to bind the proxy socket to.
+
+[^1]: Theoretically also works on DragonFly BSD, FreeBSD, NetBSD, and OpenBSD, but not tested.
+[^2]: Depending on your Windows version and network configuration, `IPV6_PKTINFO` may be ignored by the OS, which can result in a routing loop. WireGuard itself is also affected by this Windows quirk. Consider setting `"proxyConnListenAddress"`, or use WireGuard's pre-up/post-down scripts to add/remove static routes for the proxy server.
+
 ## License
 
 [AGPL-3.0-or-later](LICENSE)
